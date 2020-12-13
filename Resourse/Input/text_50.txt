@@ -1,0 +1,50 @@
+/*    point_size = 3,                                                                  */
+/*    points(p)) $                                                                     */
+cspline(tab,[select]):= block([options, defaults, n, aux, y2, u, sig, p,
+                               qn, un, a, b, s:0, aj, bj, cj, dj, ratprint:false,tab2],
+   tab2: interpol_check_input(tab,"cspline"),
+   options:  ['d1, 'dn, 'varname],
+   defaults: ['unknown, 'unknown, 'x],
+   for i in select do(
+      aux: ?position(lhs(i),options),
+      if numberp(aux) and aux <= length(options) and aux >= 1
+        then defaults[aux]: rhs(i)),
+   if not numberp(defaults[1]) and  defaults[1] # 'unknown
+      then error("Option 'd1' is not correct"),
+   if not numberp(defaults[2]) and  defaults[2] # 'unknown
+      then error("Option 'dn' is not correct"),
+   if not symbolp(defaults[3])
+      then error("Option 'varname' is not correct"),
+
+   /* if tab2 contains only two points, linear interpolation */
+   n: length(tab2),
+   if n=2 /* case of two points */
+      then return(ratsimp( tab2[2][2] + (tab2[2][2]-tab2[1][2]) *
+                                       (defaults[3]-tab2[2][1]) /
+                                       (tab2[2][1]-tab2[1][1]))),
+
+
+   /* constructing the interpolating polynomial */
+   y2: makelist(0,i,1,n),
+   u: makelist(0,i,1,n-1),
+
+   /* controlling the lower boundary condition */
+   if /*d1*/ defaults[1] = 'unknown
+      then (y2[1]: 0,
+            u[1]: 0)
+      else (y2[1]: -1/2,
+            u[1]: 3 / (tab2[2][1]-tab2[1][1]) *
+                      ((tab2[2][2] - tab2[1][2])/(tab2[2][1] - tab2[1][1]) - defaults[1]) ),
+
+   /* decomposition loop of the triangular algorithm */
+   for i:2 thru n-1 do (
+      sig: (tab2[i][1] - tab2[i-1][1]) / (tab2[i+1][1] - tab2[i-1][1]),
+      p: sig * y2[i-1] + 2,
+      y2[i]: (sig - 1) / p,
+      u[i]: (tab2[i+1][2] - tab2[i][2]) /(tab2[i+1][1] - tab2[i][1]) -
+            (tab2[i][2] - tab2[i-1][2]) /(tab2[i][1] - tab2[i-1][1]),
+      u[i]: (6 * u[i] / (tab2[i+1][1] - tab2[i-1][1]) - sig * u[i-1]) / p ) ,
+
+   /* controlling the upper boundary condition */
+   if /*dn*/ defaults[2] = 'unknown
+      then (qn: 0, un: 0) else (qn: 1/2, un: 3 / (tab2[n][1] - tab2[n-1][1])...

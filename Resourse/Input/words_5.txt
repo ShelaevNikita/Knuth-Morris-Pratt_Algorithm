@@ -1,0 +1,5 @@
+interpolation
+point
+case of two
+tab2[i][2]
+p:[[7,2],[8,2],[1,5],[3,2],[6,7]]

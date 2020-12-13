@@ -1,0 +1,100 @@
+
+This package defines some interpolation techniques.
+For questions, suggestions, bugs and the like, feel free
+to contact me at
+mario @@@ edu DOT xunta DOT es
+*/
+
+/* Returns de input in the form of a list of pairs, ordered wrt the first */
+/* coordinate. The argument must be either:                               */
+/*  a) a two column matrix, p:matrix([2,4],[5,6],[9,3])                   */
+/*  b) a list of pairs, p: [[2,4],[5,6],[9,3]]                            */
+/*  c) a list of numbers, p: [4,6,3], in which case the abscissas will be */
+/*     assigned automatically to 1, 2, 3, etc.                            */
+/* This is an uxiliary function for the 'interpol' package.               */
+interpol_check_input(data,funame):= block([n,out],
+   n: length(data),
+      then error("Argument to '",funame,"' has too few sample points")
+   elseif listp(data) and every('identity,map(lambda([x], not listp(x)),data)) 
+      then out: makelist([i,data[i]],i,1,n)
+      else error("Error in arguments to '",funame,"' function"),
+   /* controlling duplicated x's */
+         then error("Duplicated abscissas are not allowed"),
+/* Lagrangian interpolation. The argument must be either:                      */
+/*  a) a two column matrix, p:matrix([2,4],[5,6],[9,3])                        */
+/*  b) a list of pairs, p: [[2,4],[5,6],[9,3]]                                 */
+/*  c) a list of numbers, p: [4,6,3], in which case the abscissas will be      */
+/*     assigned automatically to 1, 2, 3, etc.                                 */
+/* In cases a) and b) the pairs are ordered wrt the 1st. coordinate before any */
+/* computation is made. Option:                                                */
+/*   'varname='x: the name of the independent variable                         */
+/* Sample session:                                                             */
+/* load(interpol);                                                             */
+/* p:[[7,2],[8,2],[1,5],[3,2],[6,7]]$                                          */
+/* draw2d(                                                                     */
+/*    explicit(f(x),x,0,9),                                                    */
+/*    point_size = 3,                                                          */
+/*    points(p)) $                                                             */
+lagrange(tab,[select]) := block([n,sum:0,prod,options,defaults,ratprint:false,tab2],
+   tab2: interpol_check_input(tab,"lagrange"),
+   options:  ['varname],
+   defaults: ['x],
+   for i in select do(
+      aux: ?position(lhs(i),options),
+      if numberp(aux) and aux <= length(options) and aux >= 1
+        then defaults[aux]: rhs(i)),
+   if not symbolp(defaults[1])
+      then error("Option 'varname' is not correct"),
+   /* constructing the interpolating polynomial */
+   n: length(tab2),
+      for k:1 thru n do
+         if k#i then prod: prod * (defaults[1]-tab2[k][1]) / (tab2[i][1]-tab2[k][1]),
+      sum: sum + prod * tab2[i][2] ),
+charfun2(z,l1,l2):= charfun(l1 <= z and z < l2)$
+/* Linear interpolation. The argument must be either:                          */
+/*  a) a two column matrix, p:matrix([2,4],[5,6],[9,3])                        */
+/*  b) a list of pairs, p: [[2,4],[5,6],[9,3]]                                 */
+/*  c) a list of numbers, p: [4,6,3], in which case the abscissas will be      */
+/* p:[[7,2],[8,2],[1,5],[3,2],[6,7]]$                                          */
+/* linearinterpol(p);                                                          */
+/* f(x):=''%;                                                                  */
+/* map(f,[2.3,5/7,%pi]);                                                       */
+/* load(draw)$;                                                                */
+/* draw2d(                                                                     */
+/*    explicit(f(x),x,0,9),                                                    */
+/*    point_size = 3,                                                          */
+/*    points(p)) $                                                             */
+      then error("Option 'varname' is not correct"),
+   /* constructing the interpolating polynomial */
+   n: length(tab2),
+   if n=2 /* case of two points */
+      then s: tab2[2][2] + (tab2[2][2]-tab2[1][2]) *
+                          (defaults[1]-tab2[2][1]) /
+                          (tab2[2][1]-tab2[1][1])
+                  then (a: 'minf, b: tab2[i][1])
+                          then (a: tab2[i-1][1], b: 'inf)
+                          else (a: tab2[i-1][1], b: tab2[i][1]),
+               s: s + apply('charfun2,[defaults[1], a, b]) *
+                      expand( tab2[i][2] + (tab2[i][2]-tab2[i-1][2]) *
+                                    (defaults[1]-tab2[i][1]) /
+                                    (tab2[i][1]-tab2[i-1][1]) )   ),
+/* Cubic splines interpolation. The argument must be either:                           */
+/*  a) a two column matrix, p:matrix([2,4],[5,6],[9,3])                                */
+/*  b) a list of pairs, p: [[2,4],[5,6],[9,3]]                                         */
+/*  c) a list of numbers, p: [4,6,3], in which case the abscissas will be              */
+/*     assigned automatically to 1, 2, 3, etc.                                         */
+/* In cases a) and b) the pairs are ordered wrt the 1st. coordinate before any         */
+/* computation is made. Options:                                                       */
+/*         at x_n is made equal to 0 (natural cubic spline); if it is equal to a       */
+/*         number, the second derivative is estimated based on this number             */
+/*   'varname='x: the name of the independent variable                                 */
+/* Reference: this algorithm is based on 'Numerical Recipes in C', section 3.3         */
+/* Sample session:                                                                     */
+/* load(interpol);                                                                     */
+/* p:[[7,2],[8,2],[1,5],[3,2],[6,7]]$                                                  */
+/* cspline(p); ==> natural cubic spline (second derivatives are zero in both extremes) */
+/* draw2d(                                                                             */
+/*    explicit(f(x),x,0,9),                                                            */
+/*    point_size = 3,                                                                  */
+/*    points(p)) $                                                                     */
+/* cspline(p,d1=0,dn=0)...                                                             */
